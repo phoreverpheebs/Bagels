@@ -38,9 +38,7 @@ def _create_default_categories(session):
     if category_count > 0:
         return
 
-    yaml_path = (
-        Path(__file__).parent.parent.parent / "static" / "default_categories.yaml"
-    )
+    yaml_path = Path(__file__).parent.parent.parent / "static" / "default_categories.yaml"
 
     with open(yaml_path, "r") as file:
         default_categories = yaml.safe_load(file)
@@ -95,9 +93,7 @@ def _sync_database_schema():
             if table.name not in existing_tables:
                 table.create(db_engine)
             else:
-                existing_columns = {
-                    col["name"] for col in inspector.get_columns(table.name)
-                }
+                existing_columns = {col["name"] for col in inspector.get_columns(table.name)}
                 model_columns = {col.name for col in table.columns}
 
                 for column_name in model_columns - existing_columns:

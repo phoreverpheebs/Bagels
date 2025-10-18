@@ -9,6 +9,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    PickleType,
 )
 from sqlalchemy.orm import relationship, validates
 
@@ -21,9 +22,7 @@ class Record(Base):
     __tablename__ = "record"
 
     createdAt = Column(DateTime, nullable=False, default=datetime.now)
-    updatedAt = Column(
-        DateTime, nullable=False, default=datetime.now, onupdate=datetime.now
-    )
+    updatedAt = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
 
     id = Column(Integer, primary_key=True, index=True)
     label = Column(String, nullable=False)
@@ -46,18 +45,16 @@ class Record(Base):
     )
     transferToAccountId = Column(Integer, ForeignKey("account.id"), nullable=True)
 
-    account = relationship(
-        "Account", foreign_keys=[accountId], back_populates="records"
-    )
+    breakdown = Column(PickleType, nullable=True)
+
+    account = relationship("Account", foreign_keys=[accountId], back_populates="records")
     category = relationship("Category", back_populates="records")
     transferToAccount = relationship(
         "Account",
         foreign_keys=[transferToAccountId],
         back_populates="transferFromRecords",
     )
-    splits = relationship(
-        "Split", back_populates="record", cascade="all, delete-orphan"
-    )
+    splits = relationship("Split", back_populates="record", cascade="all, delete-orphan")
 
     @validates("amount")
     def validate_amount(self, key, value):

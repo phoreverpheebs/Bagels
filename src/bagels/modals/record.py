@@ -1,4 +1,5 @@
 from datetime import datetime
+from math import isclose
 
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -48,6 +49,18 @@ class RecordModal(InputModal):
             "Submit & Template",
             priority=True,
         ),
+        Binding(
+            CONFIG.hotkeys.record_modal.add_breakdown,
+            "add_breakdown",
+            "+breakdown",
+            priority=True,
+        ),
+        Binding(
+            CONFIG.hotkeys.record_modal.delete_last_breakdown,
+            "delete_last_breakdown",
+            "-last breakdown",
+            priority=True,
+        ),
     ]
 
     def __init__(
@@ -55,6 +68,7 @@ class RecordModal(InputModal):
         title: str,
         form: Form = Form(),
         splitForm: Form = Form(),
+        breakdownForm: Form = Form(),
         isEditing: bool = False,
         date: datetime = datetime.now(),
         *args,
@@ -63,12 +77,15 @@ class RecordModal(InputModal):
         super().__init__(title, form, *args, **kwargs)
         self.record_form = RecordForm()
         self.splitForm = splitForm
+        self.breakdownForm = breakdownForm
         self.isEditing = isEditing
         if isEditing:
             self._bindings.key_to_bindings.clear()
             self.refresh_bindings()
         self.splitFormOneLength = len(self.record_form.get_split_form(0, False))
         self.splitCount = int(len(splitForm) / self.splitFormOneLength)
+        self.breakdownFormOneLength = len(self.record_form.get_breakdown_form(0))
+        self.breakdownCount = len(breakdownForm) // self.breakdownFormOneLength
         self.persons = get_all_persons()
         self.accounts = get_all_accounts_with_balance()
         self.date = date
@@ -79,20 +96,23 @@ class RecordModal(InputModal):
     def _get_splits_from_result(self, resultForm: dict):
         splits = []
         for i in range(0, self.splitCount):
-            splits.append(
-                {
-                    "personId": resultForm[f"personId-{i}"],
-                    "amount": resultForm[f"amount-{i}"],
-                    "isPaid": resultForm[f"isPaid-{i}"],
-                    "accountId": resultForm[f"accountId-{i}"],
-                    "paidDate": resultForm[f"paidDate-{i}"],
-                }
-            )
+            splits.append({
+                "personId": resultForm[f"personId-{i}"],
+                "amount": resultForm[f"amount-{i}"],
+                "isPaid": resultForm[f"isPaid-{i}"],
+                "accountId": resultForm[f"accountId-{i}"],
+                "paidDate": resultForm[f"paidDate-{i}"],
+            })
         return splits
 
     def _get_split_widget(self, index: int, fields: Form, isPaid: bool):
         widget = Container(Fields(fields), id=f"split-{index}", classes="split")
         widget.border_title = "> Paid split <" if isPaid else "> Split <"
+        return widget
+
+    def _get_breakdown_widget(self, index: int, fields: Form):
+        widget = Container(Fields(fields), id=f"breakdown-{index}", classes="breakdown")
+        widget.border_title = "> Price <"
         return widget
 
     def _get_init_split_widgets(self):
@@ -110,6 +130,17 @@ class RecordModal(InputModal):
                     isPaid = field.default_value
                     break
             widgets.append(self._get_split_widget(i, oneSplitForm, isPaid))
+        return widgets
+
+    def _get_init_breakdown_widgets(self):
+        widgets = []
+        for i in range(0, self.breakdownCount):
+            oneBreakdownForm = Form(
+                fields=self.breakdownForm.fields[
+                    i * self.breakdownFormOneLength : (i + 1) * self.breakdownFormOneLength
+                ]
+            )
+            widgets.append(self._get_breakdown_widget(i, oneBreakdownForm))
         return widgets
 
     def _update_errors(self, errors: dict):
@@ -134,15 +165,9 @@ class RecordModal(InputModal):
         event.input.heldValue = person.id
 
     def on_auto_complete_selected(self, event: AutoComplete.Selected) -> None:
-        if (
-            "field-label" in event.input.id
-        ):  # if the autocompleted field is the label field
-            template = get_template_by_id(
-                event.input.heldValue
-            )  # get the template specified
-            for field in self.form.fields[
-                1:-1
-            ]:  # skip the label field and the date field
+        if "field-label" in event.input.id:  # if the autocompleted field is the label field
+            template = get_template_by_id(event.input.heldValue)  # get the template specified
+            for field in self.form.fields[1:-1]:  # skip the label field and the date field
                 has_heldValue = field.type in ["autocomplete"]
                 fieldWidget = self.query_one(f"#field-{field.key}")
                 if not has_heldValue:
@@ -154,9 +179,7 @@ class RecordModal(InputModal):
                     fieldWidget.heldValue = getattr(template, field.key)
                     if "Id" in field.key:
                         fieldWidget.value = str(
-                            getattr(
-                                getattr(template, field.key.replace("Id", "")), "name"
-                            )
+                            getattr(getattr(template, field.key.replace("Id", "")), "name")
                         )
                     # Call handle select index to properly handle other updates
                     controller: Field = self.query_one(f"#field-{field.key}-controller")
@@ -187,9 +210,7 @@ class RecordModal(InputModal):
         )
         for field in new_split_form.fields:
             self.splitForm.fields.append(field)
-        splits_container.mount(
-            self._get_split_widget(current_split_index, new_split_form, paid)
-        )
+        splits_container.mount(self._get_split_widget(current_split_index, new_split_form, paid))
         # Use call_after_refresh to ensure the mount is complete
         splits_container.call_after_refresh(
             lambda: self.query_one(f"#field-personId-{current_split_index}").focus()
@@ -202,9 +223,7 @@ class RecordModal(InputModal):
             self.query_one(
                 f"#dropdown-personId-{self.splitCount - 1}"
             ).remove()  # idk why this is needed
-            dropdown_accountId = self.query(
-                f"#dropdown-accountId-{self.splitCount - 1}"
-            )
+            dropdown_accountId = self.query(f"#dropdown-accountId-{self.splitCount - 1}")
             if dropdown_accountId:
                 dropdown_accountId[0].remove()
             for i in range(self.splitFormOneLength):
@@ -215,25 +234,68 @@ class RecordModal(InputModal):
         self.shift_pressed = True
         self.action_submit()
 
+    def action_add_breakdown(self):
+        breakdown_container = self.query_one("#breakdown-container", Container)
+        current_breakdown_index = self.breakdownCount
+        new_breakdown_form = self.record_form.get_breakdown_form(
+            current_breakdown_index,
+        )
+        for field in new_breakdown_form.fields:
+            self.breakdownForm.fields.append(field)
+        breakdown_container.mount(
+            self._get_breakdown_widget(current_breakdown_index, new_breakdown_form)
+        )
+        breakdown_container.call_after_refresh(
+            lambda: self.query_one(f"#field-itemName-{current_breakdown_index}").focus()
+        )
+        self.breakdownCount += 1
+
+    def action_delete_last_breakdown(self):
+        if self.breakdownCount > 0:
+            self.query_one(f"#breakdown-{self.breakdownCount - 1}").remove()
+            for i in range(self.breakdownFormOneLength):
+                self.breakdownForm.fields.pop()
+            self.breakdownCount -= 1
+
     def action_submit(self):
         resultRecordForm, errors, isValid = validateForm(self, self.form)
+        resultBreakdownForm, errorsBreakdown, isValidBreakdown = validateForm(
+            self, self.breakdownForm
+        )
         resultSplitForm, errorsSplit, isValidSplit = validateForm(self, self.splitForm)
-        if isValid and isValidSplit:
-            resultSplits = self._get_splits_from_result(resultSplitForm)
-            self.dismiss(
-                {
-                    "record": resultRecordForm,
-                    "splits": resultSplits,
-                    "createTemplate": self.shift_pressed,
+        if isValid and isValidBreakdown and isValidSplit:
+            items = []
+            breakdownSum = 0.0
+            for i in range(0, self.breakdownCount):
+                item = {
+                    "itemName": resultBreakdownForm[f"itemName-{i}"],
+                    "amount": resultBreakdownForm[f"amount-{i}"],
                 }
-            )
+                items.append(item)
+                breakdownSum += item["amount"]
+
+            if breakdownSum > resultRecordForm["amount"] and not isclose(
+                breakdownSum, resultRecordForm["amount"]
+            ):
+                self._update_errors({"amount": "Total is lower than breakdown sum"})
+                return
+
+            resultRecordForm["breakdown"] = items
+
+            resultSplits = self._get_splits_from_result(resultSplitForm)
+            self.dismiss({
+                "record": resultRecordForm,
+                "splits": resultSplits,
+                "createTemplate": self.shift_pressed,
+            })
             return
-        self._update_errors({**errors, **errorsSplit})
+        self._update_errors({**errors, **errorsBreakdown, **errorsSplit})
 
     # -------------- Compose ------------- #
 
     def compose(self) -> ComposeResult:
         yield ModalContainer(
             Fields(self.form),
+            Container(*self._get_init_breakdown_widgets(), id="breakdown-container"),
             Container(*self._get_init_split_widgets(), id="splits-container"),
         )

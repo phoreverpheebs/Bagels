@@ -114,6 +114,28 @@ class RecordForm:
         ]
     )
 
+    BREAKDOWN_FORM = Form(
+        fields=[
+            FormField(
+                title="Item",
+                key="itemName",
+                type="string",
+                options=Options(),
+                create_action=True,
+                is_required=True,
+                placeholder="Item Name",
+            ),
+            FormField(
+                title="Amount",
+                key="amount",
+                type="number",
+                min=0,
+                is_required=True,
+                placeholder="0.00",
+            ),
+        ]
+    )
+
     # ----------------- - ---------------- #
 
     def __init__(self):
@@ -204,7 +226,17 @@ class RecordForm:
                 )
         return split_form
 
-    def get_filled_form(self, recordId: int) -> tuple[list, list]:
+    def get_breakdown_form(
+        self,
+        index: int,
+    ) -> Form:
+        breakdown_form = copy.deepcopy(self.BREAKDOWN_FORM)
+        for field in breakdown_form.fields:
+            fieldKey = field.key
+            field.key = f"{fieldKey}-{index}"
+        return breakdown_form
+
+    def get_filled_form(self, recordId: int) -> tuple[list, list, list]:
         """Return a copy of the form with values from the record"""
         filled_form = copy.deepcopy(self.FORM)
         record = get_record_by_id(recordId, populate_splits=True)
@@ -262,7 +294,21 @@ class RecordForm:
 
                 filled_splits.fields.append(field)
 
-        return filled_form, filled_splits
+        filled_breakdown = Form()
+        if record.breakdown is not None:
+            for index, item in enumerate(record.breakdown):
+                breakdown_form = self.get_breakdown_form(index)
+                for field in breakdown_form.fields:
+                    fieldKey = field.key.split("-")[0]
+                    value = item[fieldKey]
+
+                    match fieldKey:
+                        case _:
+                            field.default_value = str(value) if value is not None else ""
+
+                    filled_breakdown.fields.append(field)
+
+        return filled_form, filled_splits, filled_breakdown
 
     # date: datetime
     # isIncome: bool
@@ -289,7 +335,5 @@ class RecordForm:
                     field.default_value = default_values["isIncome"]
                 case "accountId":
                     field.default_value = default_values["accountId"]["default_value"]
-                    field.default_value_text = default_values["accountId"][
-                        "default_value_text"
-                    ]
+                    field.default_value_text = default_values["accountId"]["default_value_text"]
         return form

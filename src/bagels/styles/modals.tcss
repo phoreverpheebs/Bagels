@@ -9,11 +9,11 @@
     background: $background 60%;
   
     .base-modal {
-      max-width: 80;
+      max-width: 100;
     }
   
-    .max-width-80 {
-      max-width: 80;
+    .max-width-100 {
+      max-width: 100;
     }
   
     .wrapper {
@@ -49,6 +49,16 @@
           border-top: double $primary-background;
           width: 1fr;
           margin-top: 1;
+        }
+
+        #breakdown-container {
+          height: auto;
+
+          .breakdown {
+            border-top: round $surface-lighten-3;
+            height: auto;
+            padding-top: 1;
+          }
         }
   
         #splits-container {

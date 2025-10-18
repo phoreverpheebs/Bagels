@@ -31,9 +31,7 @@ class RecordCUD:
                     if result["createTemplate"]:
                         create_template_from_record(result["record"])
                 except Exception as e:
-                    self.app.notify(
-                        title="Error", message=f"{e}", severity="error", timeout=10
-                    )
+                    self.app.notify(title="Error", message=f"{e}", severity="error", timeout=10)
                 else:
                     self.app.notify(
                         title="Success",
@@ -48,6 +46,7 @@ class RecordCUD:
                 "New Record",
                 form=RecordForm().get_form(default_values=self.page_parent.mode),
                 splitForm=Form(),
+                breakdownForm=Form(),
                 date=self.page_parent.mode["date"],
             ),
             callback=check_result,
@@ -55,9 +54,7 @@ class RecordCUD:
 
     def action_edit(self) -> None:
         if not (hasattr(self, "current_row") and self.current_row):
-            self.app.notify(
-                title="Error", message="Nothing selected", severity="error", timeout=2
-            )
+            self.app.notify(title="Error", message="Nothing selected", severity="error", timeout=2)
             self.app.bell()
             return
         # ----------------- - ---------------- #
@@ -73,9 +70,7 @@ class RecordCUD:
                     else:
                         update_record(id, result)
                 except Exception as e:
-                    self.app.notify(
-                        title="Error", message=f"{e}", severity="error", timeout=10
-                    )
+                    self.app.notify(title="Error", message=f"{e}", severity="error", timeout=10)
                 else:
                     self.app.notify(
                         title="Success",
@@ -97,9 +92,7 @@ class RecordCUD:
                 try:
                     update_person(id, result)
                 except Exception as e:
-                    self.app.notify(
-                        title="Error", message=f"{e}", severity="error", timeout=10
-                    )
+                    self.app.notify(title="Error", message=f"{e}", severity="error", timeout=10)
                 else:
                     self.app.notify(
                         title="Success",
@@ -134,12 +127,15 @@ class RecordCUD:
                         callback=check_result_records,
                     )
                 else:
-                    filled_form, filled_splits = RecordForm().get_filled_form(record.id)
+                    filled_form, filled_splits, filled_breakdown = RecordForm().get_filled_form(
+                        record.id
+                    )
                     self.app.push_screen(
                         RecordModal(
                             "Edit Record",
                             form=filled_form,
                             splitForm=filled_splits,
+                            breakdownForm=filled_breakdown,
                             isEditing=True,
                         ),
                         callback=check_result_records,
@@ -157,9 +153,7 @@ class RecordCUD:
                     )
                 else:
                     split_data = {
-                        "accountId": self.page_parent.mode["accountId"][
-                            "default_value"
-                        ],
+                        "accountId": self.page_parent.mode["accountId"]["default_value"],
                         "isPaid": True,
                         "paidDate": datetime.now(),
                     }
@@ -182,9 +176,7 @@ class RecordCUD:
                     )
                     return
                 self.app.push_screen(
-                    InputModal(
-                        "Edit Person", form=self.person_form.get_filled_form(person.id)
-                    ),
+                    InputModal("Edit Person", form=self.person_form.get_filled_form(person.id)),
                     callback=check_result_person,
                 )
             case _:
@@ -192,9 +184,7 @@ class RecordCUD:
 
     def action_delete(self) -> None:
         if not (hasattr(self, "current_row") and self.current_row):
-            self.app.notify(
-                title="Error", message="Nothing selected", severity="error", timeout=2
-            )
+            self.app.notify(title="Error", message="Nothing selected", severity="error", timeout=2)
             self.app.bell()
             return
         # ----------------- - ---------------- #
@@ -243,9 +233,7 @@ class RecordCUD:
                 try:
                     create_record(result)
                 except Exception as e:
-                    self.app.notify(
-                        title="Error", message=f"{e}", severity="error", timeout=10
-                    )
+                    self.app.notify(title="Error", message=f"{e}", severity="error", timeout=10)
                 else:
                     self.app.notify(
                         title="Success",

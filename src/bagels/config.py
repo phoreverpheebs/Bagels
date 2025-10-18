@@ -27,6 +27,7 @@ class HomeHotkeys(BaseModel):
     budgets: str = "b"
     new_transfer: str = "t"
     toggle_splits: str = "s"
+    toggle_breakdown: str = "p"
     display_by_date: str = "q"
     display_by_person: str = "w"
     advance_filter: str = "f"
@@ -43,6 +44,8 @@ class RecordModalHotkeys(BaseModel):
     new_paid_split: str = "ctrl+shift+a"
     delete_last_split: str = "ctrl+d"
     submit_and_template: str = "ctrl+t"
+    add_breakdown: str = "ctrl+b"
+    delete_last_breakdown: str = "ctrl+r"
 
 
 class CategoriesHotkeys(BaseModel):
@@ -78,12 +81,8 @@ class BudgetingStates(BaseModel):
     income_assess_threshold: float = 100
     income_assess_fallback: float = 3500  # Minimum income
     # -------- Savings budgetting -------- #
-    savings_assess_metric: Literal["percentagePeriodIncome", "setAmount"] = (
-        "percentagePeriodIncome"
-    )
-    savings_percentage: float = (
-        0.2  # used only if savings_assess_metric is percentagePeriodIncome
-    )
+    savings_assess_metric: Literal["percentagePeriodIncome", "setAmount"] = "percentagePeriodIncome"
+    savings_percentage: float = 0.2  # used only if savings_assess_metric is percentagePeriodIncome
     savings_amount: float = 0  # used only if savings_assess_metric is setAmount
     # ---------- MNW budgetting ---------- #
     wants_spending_assess_metric: Literal["percentageQuota", "setAmount"] = (
@@ -92,9 +91,7 @@ class BudgetingStates(BaseModel):
     wants_spending_percentage: float = (
         0.2  # used only if wants_spending_assess_metric is setPercentage
     )
-    wants_spending_amount: float = (
-        0  # used only if wants_spending_assess_metric is setAmount
-    )
+    wants_spending_amount: float = 0  # used only if wants_spending_assess_metric is setAmount
 
 
 class State(BaseModel):
@@ -177,9 +174,7 @@ class Config(BaseModel):
 
     @classmethod
     def get_default(cls):
-        return cls(
-            hotkeys=Hotkeys(), symbols=Symbols(), defaults=Defaults(), state=State()
-        )
+        return cls(hotkeys=Hotkeys(), symbols=Symbols(), defaults=Defaults(), state=State())
 
 
 class ConfigurationError(Exception):
@@ -227,13 +222,9 @@ def load_config():
             response = input().lower()
             if response.startswith("y"):
                 open_config_file()
-                print(
-                    "\nOpened config file. Please fix the error and restart the application."
-                )
+                print("\nOpened config file. Please fix the error and restart the application.")
             else:
-                print(
-                    "\nPlease update your config.yaml file with valid values and try again."
-                )
+                print("\nPlease update your config.yaml file with valid values and try again.")
         except KeyboardInterrupt:
             print("\nExiting...")
 

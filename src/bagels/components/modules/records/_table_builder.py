@@ -112,8 +112,7 @@ class RecordTableBuilder:
                 case "month":
                     # Group by week
                     week_start = record.date - timedelta(
-                        days=(record.date.weekday() - CONFIG.defaults.first_day_of_week)
-                        % 7
+                        days=(record.date.weekday() - CONFIG.defaults.first_day_of_week) % 7
                     )
                     week_end = week_start + timedelta(days=6)
 
@@ -152,6 +151,9 @@ class RecordTableBuilder:
             if record.splits and self.show_splits:
                 self._add_split_rows(table, record, flow_icon)
 
+            if record.breakdown and self.show_breakdown:
+                self._add_breakdown_rows(table, record, flow_icon)
+
     def _get_flow_icon(self, recordHasSplits: bool, is_income: bool) -> str:
         if recordHasSplits and not self.show_splits:
             flow_icon_positive = "[green]=[/green]"
@@ -178,12 +180,12 @@ class RecordTableBuilder:
             account_string = "-"
         else:
             color_tag = record.category.color.lower()
-            category_string = f"[{color_tag}]{CONFIG.symbols.category_color}[/{color_tag}] {record.category.name}"
+            category_string = (
+                f"[{color_tag}]{CONFIG.symbols.category_color}[/{color_tag}] {record.category.name}"
+            )
 
             if record.splits and not self.show_splits:
-                amount_self = round(
-                    record.amount - get_record_total_split_amount(record.id), 2
-                )
+                amount_self = round(record.amount - get_record_total_split_amount(record.id), 2)
                 amount_string = f"{flow_icon} {amount_self}"
             else:
                 amount_string = f"{flow_icon} {record.amount}"
@@ -192,9 +194,7 @@ class RecordTableBuilder:
 
         return category_string, amount_string, account_string
 
-    def _add_group_header_row(
-        self, table: DataTable, string: str, key: str = None
-    ) -> None:
+    def _add_group_header_row(self, table: DataTable, string: str, key: str = None) -> None:
         table.add_row("//", string, "", "", "", style_name="group-header", key=key)
 
     def _add_split_rows(self, table: DataTable, record, flow_icon: str) -> None:
@@ -238,6 +238,23 @@ class RecordTableBuilder:
             style_name="net",
         )
 
+    def _add_breakdown_rows(self, table: DataTable, record, flow_icon: str) -> None:
+        color = record.category.color.lower()
+        line_char = f"[{color}]{CONFIG.symbols.line_char}[/{color}]"
+        finish_line_char = f"[{color}]{CONFIG.symbols.finish_line_char}[/{color}]"
+
+        for index, item in enumerate(record.breakdown):
+            name = item["itemName"]
+            amount = item["amount"]
+
+            table.add_row(
+                " ",
+                f"{line_char if index != len(record.breakdown) - 1 else finish_line_char}",
+                f"  {amount}",
+                f"{name}",
+                key=f"b-{name}",
+            )
+
     def _get_split_status_icon(self, split) -> str:
         if split.isPaid:
             return f"[green]{CONFIG.symbols.split_paid}[/green]"
@@ -264,9 +281,7 @@ class RecordTableBuilder:
         for person in persons:
             if person.splits:  # Person has splits for this month
                 # Add person header
-                self._add_group_header_row(
-                    table, person.name, key=f"p-{str(person.id)}"
-                )
+                self._add_group_header_row(table, person.name, key=f"p-{str(person.id)}")
 
                 # Add splits for this person
                 total_unpaid = 0  # Initialize total unpaid amount for this person
@@ -277,11 +292,7 @@ class RecordTableBuilder:
                         if split.isPaid
                         else f"[red]{CONFIG.symbols.split_unpaid}[/red]"
                     )
-                    date = (
-                        format_date_to_readable(split.paidDate)
-                        if split.paidDate
-                        else "Not paid"
-                    )
+                    date = format_date_to_readable(split.paidDate) if split.paidDate else "Not paid"
                     record_date = format_date_to_readable(record.date)
                     category = f"[{record.category.color.lower()}]{CONFIG.symbols.category_color}[/{record.category.color.lower()}] {record.category.name}"
 

@@ -38,6 +38,7 @@ Records .label-highlight-match {
         (CONFIG.hotkeys.edit, "edit", "Edit"),
         (CONFIG.hotkeys.home.new_transfer, "new_transfer", "Transfer"),
         (CONFIG.hotkeys.home.toggle_splits, "toggle_splits", "Toggle Splits"),
+        (CONFIG.hotkeys.home.toggle_breakdown, "toggle_breakdown", "Toggle Breakdown"),
         Binding(
             CONFIG.hotkeys.home.display_by_person,
             "display_by_person",
@@ -54,6 +55,7 @@ Records .label-highlight-match {
 
     can_focus = True
     show_splits = True
+    show_breakdown = True
     displayMode = reactive(DisplayMode.DATE)
     FILTERS = {}
     FILTER_LABEL_TIPS = {
@@ -63,9 +65,7 @@ Records .label-highlight-match {
     }
 
     def __init__(self, parent: Static, *args, **kwargs) -> None:
-        super().__init__(
-            *args, **kwargs, id="records-container", classes="module-container"
-        )
+        super().__init__(*args, **kwargs, id="records-container", classes="module-container")
         super().__setattr__("border_title", "Records")
         self.page_parent = parent
         self.person_form = PersonForm()
@@ -101,6 +101,10 @@ Records .label-highlight-match {
 
     def action_toggle_splits(self) -> None:
         self.show_splits = not self.show_splits
+        self.rebuild()
+
+    def action_toggle_breakdown(self) -> None:
+        self.show_breakdown = not self.show_breakdown
         self.rebuild()
 
     def action_display_by_person(self) -> None:
@@ -145,9 +149,7 @@ Records .label-highlight-match {
     def compose(self) -> ComposeResult:
         with Container(classes="selectors"):
             with Container(id="display-selector"):
-                yield Button(
-                    f"Date ({CONFIG.hotkeys.home.display_by_date})", id="display-date"
-                )
+                yield Button(f"Date ({CONFIG.hotkeys.home.display_by_date})", id="display-date")
                 yield Button(
                     f"Person ({CONFIG.hotkeys.home.display_by_person})",
                     id="display-person",

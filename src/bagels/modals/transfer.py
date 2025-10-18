@@ -34,8 +34,7 @@ class Accounts(ListView):
                     ),
                     Label(
                         str(account.balance),
-                        classes="balance "
-                        + ("hidden-balance" if account.hidden else ""),
+                        classes="balance " + ("hidden-balance" if account.hidden else ""),
                     ),
                     classes="item",
                     id=f"account-{account.id}",
@@ -103,9 +102,7 @@ class TransferModal(ModalScreen):
         self.fromAccountsSelector = Accounts(
             self.accounts, initial_id=self.fromAccount, type="from"
         )
-        self.toAccountsSelector = Accounts(
-            self.accounts, initial_id=self.toAccount, type="to"
-        )
+        self.toAccountsSelector = Accounts(self.accounts, initial_id=self.toAccount, type="to")
         transfer_modal = self.query_one("#transfer-modal")
         container = Container(
             self.fromAccountsSelector,
@@ -165,5 +162,5 @@ class TransferModal(ModalScreen):
                 Label(id="transfer-error"),
                 id="transfer-modal",
             ),
-            custom_classes="wrapper max-width-80",
+            custom_classes="wrapper max-width-100",
         )

@@ -84,23 +84,17 @@ def get_records(
             joinedload(Record.category),
             joinedload(Record.account),
             joinedload(Record.transferToAccount),
-            joinedload(Record.splits).options(
-                joinedload(Split.account), joinedload(Split.person)
-            ),
+            joinedload(Record.splits).options(joinedload(Split.account), joinedload(Split.person)),
         )
 
         start_of_period, end_of_period = get_start_end_of_period(offset, offset_type)
-        query = query.filter(
-            Record.date >= start_of_period, Record.date < end_of_period
-        )
+        query = query.filter(Record.date >= start_of_period, Record.date < end_of_period)
 
         if account_id not in [None, ""]:
             query = query.filter(Record.accountId == account_id)
         if category_piped_names not in [None, ""]:
             category_names = category_piped_names.split("|")
-            query = query.join(Record.category).filter(
-                Category.name.in_(category_names)
-            )
+            query = query.join(Record.category).filter(Category.name.in_(category_names))
         if operator_amount not in [None, ""]:
             operator, amount = get_operator_amount(operator_amount)
             if operator and amount:
@@ -166,9 +160,7 @@ def get_spending(start_date, end_date) -> list[float]:
     session = Session()
     try:
         records = _get_spending_records(session, start_date, end_date)
-        return _calculate_daily_spending(
-            records, start_date, end_date, cumulative=False
-        )
+        return _calculate_daily_spending(records, start_date, end_date, cumulative=False)
     finally:
         session.close()
 
@@ -211,9 +203,7 @@ def get_daily_balance(start_date, end_date) -> list[float]:
         total_balance = sum(a.beginningBalance for a in accounts)
         old_records = (
             session.query(Record)
-            .filter(
-                Record.date < start_date, Record.accountId.in_([a.id for a in accounts])
-            )
+            .filter(Record.date < start_date, Record.accountId.in_([a.id for a in accounts]))
             .options(
                 joinedload(Record.splits),
                 joinedload(Record.account),
@@ -280,9 +270,7 @@ def update_record(record_id: int, updated_data: dict):
         session.close()
 
 
-def update_record_and_splits(
-    record_id: int, record_data: dict, splits_data: list[dict]
-):
+def update_record_and_splits(record_id: int, record_data: dict, splits_data: list[dict]):
     session = Session()
     try:
         record = update_record(record_id, record_data)
