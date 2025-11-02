@@ -20,18 +20,20 @@ def format_date_to_readable(date) -> str:
     today = datetime.now().date()
     date = date.date() if isinstance(date, datetime) else date
 
-    if date == today:
-        return "Today"
-    elif date == today - timedelta(days=1):
-        return "Yesterday"
+    dd_mm = date.strftime(CONFIG.defaults.date_format)
 
-    # Get start of current week (Monday)
-    start_of_week = today - timedelta(days=today.weekday())
-    # Get end of current week (Sunday)
+    if date == today:
+        return f"Today {dd_mm}"
+    elif date == today - timedelta(days=1):
+        return f"Yesterday {dd_mm}"
+
+    # Get start of current week (Sunday)
+    start_of_week = today - timedelta(days=today.weekday() + 1)
+    # Get end of current week (Saturday)
     end_of_week = start_of_week + timedelta(days=6)
 
     if start_of_week <= date <= end_of_week:
-        return date.strftime("%A")
+        return "{} {}".format(date.strftime("%A"), dd_mm)
     else:
         return date.strftime(CONFIG.defaults.date_format)
 
