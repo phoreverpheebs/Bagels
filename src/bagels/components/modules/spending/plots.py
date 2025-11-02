@@ -22,9 +22,7 @@ class BasePlot(ABC):
         self.app = app
 
     @abstractmethod
-    def get_data(
-        self, start_of_period: datetime, end_of_period: datetime
-    ) -> list[float]:
+    def get_data(self, start_of_period: datetime, end_of_period: datetime) -> list[float]:
         """Return a list of data points"""
         pass
 
@@ -111,6 +109,13 @@ class SpendingTrajectoryPlot(BasePlot):
                     prediction_data,
                     marker=CONFIG.defaults.plot_marker,
                     color=get_theme_color("secondary"),
+                )
+                plt.text(
+                    f"{prediction_data[-1]:.2f}",
+                    x=dates[-2],
+                    y=limit,
+                    color=get_theme_color("foreground"),
+                    background=get_theme_color("background"),
                 )
 
         # ----- Period spending separator ---- #
