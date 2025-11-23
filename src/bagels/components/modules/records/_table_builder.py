@@ -147,12 +147,12 @@ class RecordTableBuilder:
                 key=f"r-{str(record.id)}",
             )
 
+            if record.breakdown and self.show_breakdown:
+                self._add_breakdown_rows(table, record, flow_icon)
+
             # Add split rows if applicable
             if record.splits and self.show_splits:
                 self._add_split_rows(table, record, flow_icon)
-
-            if record.breakdown and self.show_breakdown:
-                self._add_breakdown_rows(table, record, flow_icon)
 
     def _get_flow_icon(self, recordHasSplits: bool, is_income: bool) -> str:
         if recordHasSplits and not self.show_splits:
@@ -252,7 +252,7 @@ class RecordTableBuilder:
                 f"{line_char if index != len(record.breakdown) - 1 else finish_line_char}",
                 f"  {amount}",
                 f"{name}",
-                key=f"b-{name}",
+                key=f"b-{str(record.id)}-{name}",
             )
 
     def _get_split_status_icon(self, split) -> str:

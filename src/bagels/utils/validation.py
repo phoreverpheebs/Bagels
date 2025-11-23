@@ -108,9 +108,7 @@ def validateForm(
         fieldKey = field.key
         fieldWidget = formComponent.query_one(f"#field-{fieldKey}")
         fieldValue = (
-            fieldWidget.heldValue
-            if hasattr(fieldWidget, "heldValue")
-            else fieldWidget.value
+            fieldWidget.heldValue if hasattr(fieldWidget, "heldValue") else fieldWidget.value
         )
 
         error = None
@@ -124,9 +122,7 @@ def validateForm(
                     result[fieldKey] = num_val
 
             case "number":
-                is_valid, error, num_val = _validate_number(
-                    fieldValue, field, is_float=True
-                )
+                is_valid, error, num_val = _validate_number(fieldValue, field, is_float=True)
                 if is_valid and fieldValue is not None and num_val is not None:
                     result[fieldKey] = num_val
 
@@ -142,9 +138,7 @@ def validateForm(
 
             case "autocomplete":
                 if field.autocomplete_selector:
-                    is_valid, error = _validate_autocomplete(
-                        fieldWidget.value, fieldValue, field
-                    )
+                    is_valid, error = _validate_autocomplete(fieldWidget.value, fieldValue, field)
                     if is_valid and fieldValue:
                         result[fieldKey] = fieldValue
                 else:

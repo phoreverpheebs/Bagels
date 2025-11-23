@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from functools import lru_cache
 
 import numpy as np
@@ -118,7 +119,7 @@ class SpendingTrajectoryPlot(BasePlot):
                     background=get_theme_color("background"),
                 )
 
-        # ----- Period spending separator ---- #
+        # ----- Period spending separator ----- #
 
         period_spending = max(data)
 
@@ -129,6 +130,19 @@ class SpendingTrajectoryPlot(BasePlot):
             [period_spending] * total_days,
             marker=CONFIG.defaults.plot_marker,
             color=get_theme_color("panel"),
+        )
+
+        # ----- Add previous month ----- #
+        prev_month_start = start_of_period - relativedelta(months=1)
+        prev_month_end = end_of_period - relativedelta(months=1)
+
+        prev_month_data = get_spending_trend(prev_month_start, prev_month_end)
+
+        plt.plot(
+            dates,
+            prev_month_data,
+            marker=CONFIG.defaults.plot_marker,
+            color=get_theme_color("success"),
         )
 
 
