@@ -44,6 +44,7 @@ class BasePlot(ABC):
 
 class SpendingPlot(BasePlot):
     name: str = "Spending"
+    supports_cross_periods = True
 
     @lru_cache
     def get_data(self, start_of_period, end_of_period):
