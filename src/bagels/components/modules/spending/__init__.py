@@ -30,12 +30,11 @@ class Spending(Static):
     BINDINGS = [
         Binding("+", "zoom_in", "Zoom in", show=True),
         Binding("-", "zoom_out", "Zoom out", show=True),
+        Binding(CONFIG.hotkeys.cycle_plots, "cycle_plots", "Cycle Plots", show=True),
     ]
 
     def __init__(self, page_parent: Static, *args, **kwargs) -> None:
-        super().__init__(
-            *args, **kwargs, id="spending-container", classes="module-container"
-        )
+        super().__init__(*args, **kwargs, id="spending-container", classes="module-container")
         super().__setattr__("border_title", "Spending")
         self._plots = [plot_cls(self.app) for plot_cls in self.PLOT_TYPES]
         self.page_parent = page_parent
@@ -73,9 +72,7 @@ class Spending(Static):
         plotext.display = False  # make plotext update by toggling display... for some reason. Maybe a bug? Who knows.
         plot = self._plots[self.current_plot]
 
-        start_of_period, end_of_period = get_start_end_of_period(
-            self.page_parent.offset, "month"
-        )
+        start_of_period, end_of_period = get_start_end_of_period(self.page_parent.offset, "month")
         self.app.log(
             f"The plot type {plot.name} has support for cross periods: {plot.supports_cross_periods}"
         )
@@ -85,9 +82,10 @@ class Spending(Static):
         self.app.log(
             f'Getting spending trend from "{start_of_period}" to "{end_of_period} ({self.page_parent.offset} months ago)"'
         )
-        string = format_period_to_readable(
-            {"offset": self.page_parent.offset, "offset_type": "month"}
-        )
+        string = format_period_to_readable({
+            "offset": self.page_parent.offset,
+            "offset_type": "month",
+        })
 
         if plot.supports_cross_periods:
             start_of_period = start_of_period - dateutil.relativedelta.relativedelta(
@@ -113,9 +111,7 @@ class Spending(Static):
         # ------------- get data ------------- #
 
         data = plot.get_data(start_of_period, end_of_period)
-        total_days = (
-            end_of_period - start_of_period
-        ).days + 1  # add one to include the end date
+        total_days = (end_of_period - start_of_period).days + 1  # add one to include the end date
         correct_data = len(data) > 0
         empty.display = not correct_data
         plotext.display = correct_data
@@ -134,8 +130,7 @@ class Spending(Static):
             )
 
         dates = [
-            (start_of_period + timedelta(days=i)).strftime("%d/%m/%Y")
-            for i in range(total_days)
+            (start_of_period + timedelta(days=i)).strftime("%d/%m/%Y") for i in range(total_days)
         ]
 
         plot.plot(
@@ -170,6 +165,7 @@ class Spending(Static):
 
             def compare_function(dd):
                 return dd.day == 1
+
         else:
 
             def compare_function(dd):
@@ -207,6 +203,13 @@ class Spending(Static):
         if not self.check_supports_cross_periods():
             return
         self.periods = self.periods + 1 if self.periods < 12 else 12
+        self.rebuild()
+
+    def action_cycle_plots(self) -> None:
+        prev_plot = self.current_plot
+        self.current_plot = (prev_plot + 1) % len(self.PLOT_TYPES)
+        self.query_one(f"#plot-{prev_plot}").set_classes("")
+        self.query_one(f"#plot-{self.current_plot}").set_classes("selected").focus()
         self.rebuild()
 
     def compose(self) -> ComposeResult:
