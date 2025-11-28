@@ -31,6 +31,7 @@ class Spending(Static):
         Binding("+", "zoom_in", "Zoom in", show=True),
         Binding("-", "zoom_out", "Zoom out", show=True),
         Binding(CONFIG.hotkeys.cycle_plots, "cycle_plots", "Cycle Plots", show=True),
+        Binding(CONFIG.hotkeys.toggle_must, "toggle_must", "Toggle Must", show=True),
     ]
 
     def __init__(self, page_parent: Static, *args, **kwargs) -> None:
@@ -38,6 +39,7 @@ class Spending(Static):
         super().__setattr__("border_title", "Spending")
         self._plots = [plot_cls(self.app) for plot_cls in self.PLOT_TYPES]
         self.page_parent = page_parent
+        self.exclude_must = False
 
     def on_mount(self) -> None:
         self.rebuild()
@@ -69,6 +71,7 @@ class Spending(Static):
         zoom_in_button = self.query_one("#zoom-in")
         zoom_out_button = self.query_one("#zoom-out")
         label = self.query_one(".current-view-label")
+        must_label = self.query_one("#must-state-label")
         plotext.display = False  # make plotext update by toggling display... for some reason. Maybe a bug? Who knows.
         plot = self._plots[self.current_plot]
 
@@ -93,16 +96,18 @@ class Spending(Static):
             )
             zoom_in_button.display = True
             zoom_out_button.display = True
-            if self.periods == 1:
-                label.update(string)
-            else:
-                label.update(
-                    f"{string} to {format_period_to_readable({'offset': self.page_parent.offset - self.periods + 1, 'offset_type': 'month'})}"
-                )
+            if self.periods != 1:
+                string = f"{string} to {format_period_to_readable({'offset': self.page_parent.offset - self.periods + 1, 'offset_type': 'month'})}"
         else:
             zoom_in_button.display = False
             zoom_out_button.display = False
-            label.update(string)
+
+        label.update(string)
+        if plot.supports_exclude_must:
+            must_label.set_classes("")
+            must_label.update("With{} Must".format("out" if self.exclude_must else ""))
+        else:
+            must_label.set_classes("hidden")
 
         plt = self.query_one(PlotextPlot).plt
         plt.clear_data()
@@ -110,7 +115,7 @@ class Spending(Static):
 
         # ------------- get data ------------- #
 
-        data = plot.get_data(start_of_period, end_of_period)
+        data = plot.get_data(start_of_period, end_of_period, self.exclude_must)
         total_days = (end_of_period - start_of_period).days + 1  # add one to include the end date
         correct_data = len(data) > 0
         empty.display = not correct_data
@@ -141,6 +146,7 @@ class Spending(Static):
             data,
             dates,
             get_theme_color,
+            self.exclude_must,
         )
 
         plt.plot(
@@ -212,6 +218,10 @@ class Spending(Static):
         self.query_one(f"#plot-{self.current_plot}").set_classes("selected").focus()
         self.rebuild()
 
+    def action_toggle_must(self) -> None:
+        self.exclude_must = not self.exclude_must
+        self.rebuild()
+
     def compose(self) -> ComposeResult:
         with Horizontal(id="top-controls-container"):
             yield Button("+", id="zoom-in")
@@ -219,6 +229,7 @@ class Spending(Static):
             yield Label("UPDATEME", classes="current-view-label")
             yield Button(">>>", id="inc-offset")
             yield Button("-", id="zoom-out")
+        yield Label("UPDATEME", id="must-state-label")
         yield PlotextPlot()
         yield EmptyIndicator("No data to display")
         with Horizontal(id="bottom-controls-container"):

@@ -25,6 +25,14 @@
   & > #bottom-controls-container {
     border-top: round $panel;
   }
+
+  & > #must-state-label {
+    dock: top;
+
+    &.hidden {
+      display: none;
+    }
+  }
 }
 
 /* ------------- Budgets ------------ */

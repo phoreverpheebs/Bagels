@@ -18,12 +18,15 @@ from bagels.managers.utils import get_income_to_use
 class BasePlot(ABC):
     name: str = "Base Plot"
     supports_cross_periods: bool = False
+    supports_exclude_must: bool = False
 
     def __init__(self, app):
         self.app = app
 
     @abstractmethod
-    def get_data(self, start_of_period: datetime, end_of_period: datetime) -> list[float]:
+    def get_data(
+        self, start_of_period: datetime, end_of_period: datetime, exclude_must: bool = False
+    ) -> list[float]:
         """Return a list of data points"""
         pass
 
@@ -37,6 +40,7 @@ class BasePlot(ABC):
         data: list[float],
         dates: list[str],
         get_theme_color,
+        exclude_must: bool = False,
     ) -> None:
         """Additional operations on the plotext object."""
         pass
@@ -45,10 +49,11 @@ class BasePlot(ABC):
 class SpendingPlot(BasePlot):
     name: str = "Spending"
     supports_cross_periods = True
+    supports_exclude_must = True
 
     @lru_cache
-    def get_data(self, start_of_period, end_of_period):
-        return get_spending(start_of_period, end_of_period)
+    def get_data(self, start_of_period, end_of_period, exclude_must=False):
+        return get_spending(start_of_period, end_of_period, exclude_must=exclude_must)
 
     def plot(
         self,
@@ -59,6 +64,7 @@ class SpendingPlot(BasePlot):
         data: list[float],
         dates: list[str],
         get_theme_color,
+        exclude_must=False,
     ) -> None:
         if min(data) >= 0:
             plt.ylim(lower=0)
@@ -66,10 +72,11 @@ class SpendingPlot(BasePlot):
 
 class SpendingTrajectoryPlot(BasePlot):
     name: str = "Spending Trajectory"
+    supports_exclude_must = True
 
     @lru_cache
-    def get_data(self, start_of_period, end_of_period):
-        return get_spending_trend(start_of_period, end_of_period)
+    def get_data(self, start_of_period, end_of_period, exclude_must=False):
+        return get_spending_trend(start_of_period, end_of_period, exclude_must=exclude_must)
 
     def plot(
         self,
@@ -80,6 +87,7 @@ class SpendingTrajectoryPlot(BasePlot):
         data: list[float],
         dates: list[str],
         get_theme_color,
+        exclude_must=False,
     ) -> None:
         # --------- Limit computation -------- #
 
@@ -137,7 +145,9 @@ class SpendingTrajectoryPlot(BasePlot):
         prev_month_start = start_of_period - relativedelta(months=1)
         prev_month_end = end_of_period - relativedelta(months=1)
 
-        prev_month_data = get_spending_trend(prev_month_start, prev_month_end)
+        prev_month_data = get_spending_trend(
+            prev_month_start, prev_month_end, exclude_must=exclude_must
+        )
 
         plt.plot(
             dates,
@@ -152,7 +162,7 @@ class BalancePlot(BasePlot):
     supports_cross_periods = True
 
     @lru_cache
-    def get_data(self, start_of_period, end_of_period):
+    def get_data(self, start_of_period, end_of_period, exclude_must=False):
         return get_daily_balance(start_of_period, end_of_period)
 
     def plot(
@@ -164,5 +174,6 @@ class BalancePlot(BasePlot):
         data: list[float],
         dates: list[str],
         get_theme_color,
+        exclude_must=False,
     ) -> None:
         pass

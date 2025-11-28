@@ -59,6 +59,7 @@ class Hotkeys(BaseModel):
     edit: str = "e"
     toggle_jump_mode: str = "v"
     cycle_plots: str = "ctrl+v"
+    toggle_must: str = "m"
     home: HomeHotkeys = HomeHotkeys()
     record_modal: RecordModalHotkeys = RecordModalHotkeys()
     categories: CategoriesHotkeys = CategoriesHotkeys()
