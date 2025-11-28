@@ -23,7 +23,9 @@ class BasePlot(ABC):
         self.app = app
 
     @abstractmethod
-    def get_data(self, start_of_period: datetime, end_of_period: datetime) -> list[float]:
+    def get_data(
+        self, start_of_period: datetime, end_of_period: datetime, exclude_must: bool = False
+    ) -> list[float]:
         """Return a list of data points"""
         pass
 
@@ -37,6 +39,7 @@ class BasePlot(ABC):
         data: list[float],
         dates: list[str],
         get_theme_color,
+        exclude_must: bool = False,
     ) -> None:
         """Additional operations on the plotext object."""
         pass
@@ -47,8 +50,8 @@ class SpendingPlot(BasePlot):
     supports_cross_periods = True
 
     @lru_cache
-    def get_data(self, start_of_period, end_of_period):
-        return get_spending(start_of_period, end_of_period)
+    def get_data(self, start_of_period, end_of_period, exclude_must=False):
+        return get_spending(start_of_period, end_of_period, exclude_must=exclude_must)
 
     def plot(
         self,
@@ -59,6 +62,7 @@ class SpendingPlot(BasePlot):
         data: list[float],
         dates: list[str],
         get_theme_color,
+        exclude_must=False,
     ) -> None:
         if min(data) >= 0:
             plt.ylim(lower=0)
@@ -68,8 +72,8 @@ class SpendingTrajectoryPlot(BasePlot):
     name: str = "Spending Trajectory"
 
     @lru_cache
-    def get_data(self, start_of_period, end_of_period):
-        return get_spending_trend(start_of_period, end_of_period)
+    def get_data(self, start_of_period, end_of_period, exclude_must=False):
+        return get_spending_trend(start_of_period, end_of_period, exclude_must=exclude_must)
 
     def plot(
         self,
@@ -80,6 +84,7 @@ class SpendingTrajectoryPlot(BasePlot):
         data: list[float],
         dates: list[str],
         get_theme_color,
+        exclude_must=False,
     ) -> None:
         # --------- Limit computation -------- #
 
@@ -137,7 +142,9 @@ class SpendingTrajectoryPlot(BasePlot):
         prev_month_start = start_of_period - relativedelta(months=1)
         prev_month_end = end_of_period - relativedelta(months=1)
 
-        prev_month_data = get_spending_trend(prev_month_start, prev_month_end)
+        prev_month_data = get_spending_trend(
+            prev_month_start, prev_month_end, exclude_must=exclude_must
+        )
 
         plt.plot(
             dates,
@@ -152,7 +159,7 @@ class BalancePlot(BasePlot):
     supports_cross_periods = True
 
     @lru_cache
-    def get_data(self, start_of_period, end_of_period):
+    def get_data(self, start_of_period, end_of_period, exclude_must=False):
         return get_daily_balance(start_of_period, end_of_period)
 
     def plot(
@@ -164,5 +171,6 @@ class BalancePlot(BasePlot):
         data: list[float],
         dates: list[str],
         get_theme_color,
+        exclude_must=False,
     ) -> None:
         pass

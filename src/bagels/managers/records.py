@@ -6,7 +6,7 @@ from sqlalchemy.orm import joinedload, sessionmaker
 from bagels.managers.splits import create_split, get_splits_by_record_id, update_split
 from bagels.managers.utils import get_operator_amount, get_start_end_of_period
 from bagels.models.account import Account
-from bagels.models.category import Category
+from bagels.models.category import Category, Nature
 from bagels.models.database.app import db_engine
 from bagels.models.record import Record
 from bagels.models.split import Split
@@ -122,15 +122,18 @@ def _get_spending_records(session, start_date, end_date):
             Record.date < end_date,
             Record.isTransfer == False,  # noqa: E712
         )
-        .options(joinedload(Record.splits))
+        .options(joinedload(Record.category), joinedload(Record.splits))
         .all()
     )
 
 
-def _calculate_daily_spending(records, start_date, end_date, cumulative=False):
+def _calculate_daily_spending(records, start_date, end_date, cumulative=False, exclude_must=False):
     """Calculate daily spending with optional cumulative sum"""
     daily_spending = {}
     for record in records:
+        if exclude_must and record.category.nature == Nature.MUST:
+            continue
+
         date_key = record.date.date()
         splits_sum = sum(split.amount for split in record.splits)
         actual_spend = record.amount - splits_sum
@@ -155,22 +158,26 @@ def _calculate_daily_spending(records, start_date, end_date, cumulative=False):
     return result
 
 
-def get_spending(start_date, end_date) -> list[float]:
+def get_spending(start_date, end_date, exclude_must=False) -> list[float]:
     """Gets a list of spent amounts for each day in the period, less split amounts of the records"""
     session = Session()
     try:
         records = _get_spending_records(session, start_date, end_date)
-        return _calculate_daily_spending(records, start_date, end_date, cumulative=False)
+        return _calculate_daily_spending(
+            records, start_date, end_date, cumulative=False, exclude_must=exclude_must
+        )
     finally:
         session.close()
 
 
-def get_spending_trend(start_date, end_date) -> list[float]:
+def get_spending_trend(start_date, end_date, exclude_must=False) -> list[float]:
     """Gets a cumulative list of spent amounts for each day in the period"""
     session = Session()
     try:
         records = _get_spending_records(session, start_date, end_date)
-        return _calculate_daily_spending(records, start_date, end_date, cumulative=True)
+        return _calculate_daily_spending(
+            records, start_date, end_date, cumulative=True, exclude_must=exclude_must
+        )
     finally:
         session.close()
 
