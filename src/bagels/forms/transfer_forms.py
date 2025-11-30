@@ -5,6 +5,7 @@ from rich.text import Text
 
 from bagels.forms.form import Form, FormField, Option, Options
 from bagels.managers.record_templates import get_transfer_templates
+from bagels.managers.categories import get_all_categories_by_freq
 from bagels.models.record import Record
 
 
@@ -28,6 +29,14 @@ class TransferForm:
                 options=Options(),
                 autocomplete_selector=False,
                 is_required=True,
+            ),
+            FormField(
+                title="Category",
+                key="categoryId",
+                type="autocomplete",
+                options=Options(),
+                is_required=False,
+                placeholder="Select Category",
             ),
             FormField(
                 title="Amount",
@@ -88,16 +97,39 @@ class TransferForm:
                 for template in templates
             ]
         )
-        self.FORM.fields[2].default_value = self.defaultDate
+
+        categories = get_all_categories_by_freq()
+        self.FORM.fields[1].options = Options(
+            items=[
+                Option(
+                    text=category.name,
+                    value=category.id,
+                    prefix=Text("●", style=category.color),
+                    postfix=(
+                        Text(
+                            (
+                                f"↪ {category.parentCategory.name}"
+                                if category.parentCategory
+                                else ""
+                            ),
+                            style=category.parentCategory.color,
+                        )
+                        if category.parentCategory
+                        else ""
+                    ),
+                )
+                for category, _ in categories
+            ]
+        )
+
+        self.FORM.fields[3].default_value = self.defaultDate
 
     # region Builders
     # ------------- Builders ------------- #
 
     def get_filled_form(self, record: Record) -> Form:
         """Return a copy of the form with values from the record"""
-        filled_form = copy.deepcopy(
-            self.FORM if not self.isTemplate else self.TEMPLATE_FORM
-        )
+        filled_form = copy.deepcopy(self.FORM if not self.isTemplate else self.TEMPLATE_FORM)
 
         if not record.isTransfer:
             return filled_form, []
@@ -113,6 +145,13 @@ class TransferForm:
                         field.default_value = value.strftime("%d")
                     else:
                         field.default_value = value.strftime("%d %m %y")
+                case "categoryId":
+                    if record.category is not None:
+                        field.default_value = record.category.id
+                        field.default_value_text = record.category.name
+                    else:
+                        field.type = "string"
+                        field.placeholder = "None"
                 case "label":
                     field.default_value = str(value) if value is not None else ""
                     field.type = "string"  # disable autocomplete

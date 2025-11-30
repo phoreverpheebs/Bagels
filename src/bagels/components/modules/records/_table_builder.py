@@ -175,9 +175,13 @@ class RecordTableBuilder:
                 if record.transferToAccount.hidden
                 else record.transferToAccount.name
             )
-            category_string = f"{from_account} → {to_account}"
+            if record.category is not None:
+                color_tag = record.category.color.lower()
+                category_string = f"[{color_tag}]{CONFIG.symbols.transfer_category_color}[/{color_tag}] {record.category.name}"
+            else:
+                category_string = CONFIG.symbols.transfer_category_color
+            account_string = f"{from_account} → {to_account}"
             amount_string = record.amount
-            account_string = "-"
         else:
             color_tag = record.category.color.lower()
             category_string = (

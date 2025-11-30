@@ -71,6 +71,7 @@ class Symbols(BaseModel):
     split_paid: str = "✓"
     split_unpaid: str = "⨯"
     category_color: str = "●"
+    transfer_category_color: str = "➤"
     amount_positive: str = "+"
     amount_negative: str = "-"
 

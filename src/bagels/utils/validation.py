@@ -75,6 +75,9 @@ def _validate_autocomplete(
         return True, None
 
     if field.options.items[0].text:
+        if field.options.items[0].text == "":
+            return True, None
+
         # Checks if selected option but user modified input text
         # Find all options with matching text
         matching_items = [item for item in field.options.items if item.text == value]

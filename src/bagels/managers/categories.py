@@ -43,8 +43,7 @@ def get_all_categories_tree() -> list[tuple[Category, Text, int]]:
                         node = Text("●", style=category.color)
                     else:
                         node = Text(
-                            " " * (depth - 1)
-                            + ("└" if is_last(category, parent_id) else "├"),
+                            " " * (depth - 1) + ("└" if is_last(category, parent_id) else "├"),
                             style=category.color,
                         )
                     result.append((category, node, depth))
@@ -113,6 +112,7 @@ def get_all_categories_records(
             Record.date >= start_of_period,
             Record.date < end_of_period,
             Record.isIncome == is_income,
+            Record.isTransfer == False,
         )
 
         category_totals = {}
@@ -134,9 +134,7 @@ def get_all_categories_records(
 
         stmt = (
             select(Category)
-            .filter(
-                Category.id.in_(category_totals.keys()), Category.deletedAt.is_(None)
-            )
+            .filter(Category.id.in_(category_totals.keys()), Category.deletedAt.is_(None))
             .options(joinedload(Category.parentCategory))
         )
         categories = session.scalars(stmt).all()
@@ -193,9 +191,7 @@ def delete_category(category_id):
             category.deletedAt = datetime.now()
 
             # Delete subcategories
-            subcategories = (
-                session.query(Category).filter_by(parentCategoryId=category_id).all()
-            )
+            subcategories = session.query(Category).filter_by(parentCategoryId=category_id).all()
             for subcategory in subcategories:
                 subcategory.deletedAt = datetime.now()
 
