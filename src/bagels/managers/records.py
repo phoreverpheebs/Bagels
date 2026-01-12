@@ -115,7 +115,8 @@ def get_records(
 def _get_spending_records(session, start_date, end_date):
     """Common function to fetch records for spending calculations"""
     return (
-        session.query(Record)
+        session
+        .query(Record)
         .filter(
             Record.isIncome == False,  # noqa: E712
             Record.date >= start_date,
@@ -209,7 +210,8 @@ def get_daily_balance(start_date, end_date) -> list[float]:
         accounts = session.query(Account).filter(Account.deletedAt.is_(None)).all()
         total_balance = sum(a.beginningBalance for a in accounts)
         old_records = (
-            session.query(Record)
+            session
+            .query(Record)
             .filter(Record.date < start_date, Record.accountId.in_([a.id for a in accounts]))
             .options(
                 joinedload(Record.splits),
@@ -240,7 +242,8 @@ def get_daily_balance(start_date, end_date) -> list[float]:
             if current > today:
                 break
             day_records = (
-                session.query(Record)
+                session
+                .query(Record)
                 .filter(
                     func.date(Record.date) == current.date(),
                     Record.accountId.in_([a.id for a in accounts]),

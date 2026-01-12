@@ -44,6 +44,8 @@ def format_period_to_readable(filter: dict) -> str:
     first_day_of_week = CONFIG.defaults.first_day_of_week
     if offset_type == "day":
         return format_date_to_readable(datetime.now() + timedelta(days=offset))
+    if offset_type == "all":
+        return "All Time"
     match offset:
         case 0:
             return f"This {offset_type.title()}"
@@ -52,6 +54,8 @@ def format_period_to_readable(filter: dict) -> str:
         case _:
             now = datetime.now()
             match offset_type:
+                case "all":
+                    return "All Time"
                 case "year":
                     target_year = now.year + offset
                     return f"{target_year}"

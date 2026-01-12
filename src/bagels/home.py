@@ -38,9 +38,7 @@ class Home(Static):
     BINDINGS = [
         Binding("left", "dec_offset", "Previous", show=False),
         Binding("right", "inc_offset", "Next", show=False),
-        Binding(
-            CONFIG.hotkeys.home.cycle_offset_type, "cycle_offset_type", "", show=False
-        ),
+        Binding(CONFIG.hotkeys.home.cycle_offset_type, "cycle_offset_type", "", show=False),
         Binding(
             CONFIG.hotkeys.home.toggle_use_account,
             "toggle_use_account",
@@ -133,6 +131,8 @@ class Home(Static):
         match offset_type:
             case "year":
                 return today
+            case "all":
+                return today
             case "month":
                 # Get first day of current month
                 first_of_month = today.replace(day=1)
@@ -141,9 +141,7 @@ class Home(Static):
                 return target_date.replace(day=1)
             case "week":
                 # Get first day of current week
-                days_to_first = (
-                    today.weekday() - CONFIG.defaults.first_day_of_week
-                ) % 7
+                days_to_first = (today.weekday() - CONFIG.defaults.first_day_of_week) % 7
                 first_of_week = today - timedelta(days=days_to_first)
                 # Add weeks
                 return first_of_week + timedelta(weeks=offset)
@@ -183,7 +181,7 @@ class Home(Static):
 
     def action_cycle_offset_type(self) -> None:
         # Define the cycle order
-        cycle_order = ["day", "week", "month", "year"]
+        cycle_order = ["day", "week", "month", "year", "all"]
 
         # Get current index
         current_index = cycle_order.index(self.filter["offset_type"])
@@ -195,13 +193,11 @@ class Home(Static):
         # calculate appropriate offset based on the target (mode date)
         match next_type:
             case "week":  # day -> week
-                self.filter["offset"] = (
-                    self.get_target_date() - datetime.now()
-                ).days // 7 + 1
+                self.filter["offset"] = (self.get_target_date() - datetime.now()).days // 7 + 1
             case "month":  # week -> month
-                self.filter["offset"] = (
-                    self.get_target_date().year - datetime.now().year
-                ) * 12 + (self.get_target_date().month - datetime.now().month)
+                self.filter["offset"] = (self.get_target_date().year - datetime.now().year) * 12 + (
+                    self.get_target_date().month - datetime.now().month
+                )
             case _:
                 self.filter["offset"] = 0
 
@@ -225,9 +221,7 @@ class Home(Static):
                     self.mode["accountId"]["default_value_text"] = account.name
                     break
         elif self.accounts_indices["count"] > 0:
-            new_index = (self.accounts_indices["index"] + dir) % self.accounts_indices[
-                "count"
-            ]
+            new_index = (self.accounts_indices["index"] + dir) % self.accounts_indices["count"]
             self.accounts_indices["index"] = new_index
             self.mode["accountId"]["default_value"] = self.accounts[new_index].id
             self.mode["accountId"]["default_value_text"] = self.accounts[new_index].name

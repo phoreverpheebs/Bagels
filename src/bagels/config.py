@@ -11,7 +11,7 @@ from bagels.locations import config_file
 
 
 class Defaults(BaseModel):
-    period: Literal["day", "week", "month", "year"] = "week"
+    period: Literal["day", "week", "month", "year", "all"] = "week"
     first_day_of_week: int = Field(ge=0, le=6, default=6)
     date_format: str = "%d/%m"
     round_decimals: int = 2

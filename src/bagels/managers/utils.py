@@ -34,6 +34,35 @@ def _get_start_end_of_year(offset: int = 0):
     return start_of_year, end_of_year
 
 
+def _get_start_end_of_all_time():
+    def get_oldest_record():
+        session = Session()
+        try:
+            query = session.query(Record)
+            oldest = query.order_by(Record.date.asc()).first()
+            newest = query.order_by(Record.date.desc()).first()
+
+            return oldest, newest
+        finally:
+            session.close()
+
+    oldest, newest = get_oldest_record()
+
+    now = datetime.now()
+
+    start_of_all_time = (
+        oldest.date.replace(hour=0, minute=0, second=0)
+        if oldest is not None
+        else now.replace(hour=0, minute=0, second=0)
+    )
+    end_of_all_time = (
+        newest.date.replace(hour=23, minute=59, second=59)
+        if newest is not None
+        else now.replace(hour=23, minute=59, second=59)
+    )
+    return start_of_all_time, end_of_all_time
+
+
 def _get_start_end_of_month(offset: int = 0):
     now = datetime.now()
     # Calculate target month and year
@@ -57,12 +86,10 @@ def _get_start_end_of_week(offset: int = 0):
     # Apply offset in weeks
     now = now + timedelta(weeks=offset)
     first_day_of_week = CONFIG.defaults.first_day_of_week
-    start_of_week = (
-        now - timedelta(days=(now.weekday() - first_day_of_week) % 7)
-    ).replace(hour=0, minute=0, second=0, microsecond=0)
-    end_of_week = (start_of_week + timedelta(days=6)).replace(
-        hour=23, minute=59, second=59
+    start_of_week = (now - timedelta(days=(now.weekday() - first_day_of_week) % 7)).replace(
+        hour=0, minute=0, second=0, microsecond=0
     )
+    end_of_week = (start_of_week + timedelta(days=6)).replace(hour=23, minute=59, second=59)
     return start_of_week, end_of_week
 
 
@@ -77,6 +104,8 @@ def _get_start_end_of_day(offset: int = 0):
 
 def get_start_end_of_period(offset: int = 0, offset_type: str = "month"):
     match offset_type:
+        case "all":
+            return _get_start_end_of_all_time()
         case "year":
             return _get_start_end_of_year(offset)
         case "month":
@@ -129,12 +158,8 @@ def get_period_figures(
 
         # Filter by date period if specified
         if offset_type is not None and offset is not None:
-            start_of_period, end_of_period = get_start_end_of_period(
-                offset, offset_type
-            )
-            query = query.filter(
-                Record.date >= start_of_period, Record.date < end_of_period
-            )
+            start_of_period, end_of_period = get_start_end_of_period(offset, offset_type)
+            query = query.filter(Record.date >= start_of_period, Record.date < end_of_period)
 
         # Filter by category nature if specified
         if nature is not None:
@@ -218,15 +243,11 @@ def get_income_to_use(offset: int):
 
     limit = 0
     if metric == "periodIncome":
-        this_month_income = get_period_figures(
-            isIncome=True, offset=offset, offset_type="month"
-        )
+        this_month_income = get_period_figures(isIncome=True, offset=offset, offset_type="month")
         if this_month_income > threshold:
             limit = this_month_income
         else:
-            limit = get_period_figures(
-                isIncome=True, offset=offset - 1, offset_type="month"
-            )
+            limit = get_period_figures(isIncome=True, offset=offset - 1, offset_type="month")
 
     if limit < fallback:
         limit = fallback
